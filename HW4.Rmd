@@ -1,0 +1,187 @@
+---
+title: "HW#4"
+author: "Keith Mitchell"
+date: "2/20/2020"
+output:
+  pdf_document: default
+  word_document: default
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Partial code credit to Prof Li (UC Davis), Weiping Zhang(USTC)
+
+
+## Number 2 
+### Part 1
+#### two-sample Hotelling's T2 test  -------
+
+```{r}
+# now we perform the two-sample Hotelling T^2-test
+n<-c(18,18)
+p<-2
+xmean1<-c(85,83)
+xmean2<-c(85,87)
+d<-xmean1-xmean2
+S1<-matrix(c(16, 8, 8, 16), nrow=2)
+S2<-matrix(c(16, 8, 8, 16), nrow=2)
+Sp<-((n[1]-1)*S1+(n[2]-1)*S2)/(sum(n)-2)
+t2 <- t(d)%*%solve(sum(1/n)*Sp)%*%d
+t2
+
+alpha<-0.05
+cval <- (sum(n)-2)*p/(sum(n)-p-1)*qf(1-alpha,p,sum(n)-p-1)
+cval
+```
+#### Since T^2 = 12 > 6.76 the null hypothesis is rejected at 5% level of significance.
+
+
+### Part 2
+#### Confidence Region
+
+```{r}
+es<-eigen(sum(1/n)*Sp)
+e1<-es$vec %*% diag(sqrt(es$val))
+r1<-sqrt(cval)
+theta<-seq(0,2*pi,len=250)
+v1<-cbind(r1*cos(theta), r1*sin(theta))
+pts<-t(d-(e1%*%t(v1)))
+plot(pts,type="l",main="Confidence Region for Bivariate Normal",xlab=expression(paste(mu, "(1)")), ylab=expression(paste(mu, "(2)")),asp=1)
+segments(0,d[2],d[1],d[2],lty=2) # highlight the center
+segments(d[1],0,d[1],d[2],lty=2)
+
+th2<-c(0,pi/2,pi,3*pi/2,2*pi)   #adding the axis
+v2<-cbind(r1*cos(th2), r1*sin(th2))
+pts2<-t(d-(e1%*%t(v2)))
+segments(pts2[3,1],pts2[3,2],pts2[1,1],pts2[1,2],lty=3)  
+segments(pts2[2,1],pts2[2,2],pts2[4,1],pts2[4,2],lty=3)
+
+# since we reject the null, we use the simultaneous confidence intervals
+# to check the significant components
+```
+
+### Part 3
+#### Simultaneous confidence intervals
+```{r}
+wd<-sqrt(cval*diag(Sp)*sum(1/n))
+Cis<-cbind(d-wd,d+wd)
+
+# 95% simultaneous confidence interval
+Cis
+#plot(Cis[1][1]:0, 1:10, type="l", lty=2)
+```
+### Part 4
+#### Bonferroni simultaneous confidence intervals
+```{r}
+wd.b<- qt(1-alpha/(2*p),n[1]+n[2]-2) *sqrt(diag(Sp)*sum(1/n))
+Cis.b<-cbind(d-wd.b,d+wd.b)
+# 95% Bonferroni simultaneous confidence interval
+Cis.b
+# both component-wise simultaneous confidence intervals do not contain 0, so they have significant differences.
+```
+
+
+## Number 3
+### Part 1
+#### two-sample Hotelling's T2 test  -------
+```{r}
+c <- matrix(c(-1,0,1,-1,0,1), nrow=2)
+tran_c <- t(c)
+s_1 <- matrix(c(16,8,8,8,16,8,8,8,16), nrow=3)
+corrected_s <- c%*%s_1%*%tran_c
+```
+
+
+```{r}
+# now we perform the two-sample Hotelling T^2-test
+n<-c(18,18)
+p<-2
+xmean1<-c(0,0)
+xmean2<-c(2,2)
+d<-xmean1-xmean2
+S1<-corrected_s
+S2<- corrected_s
+Sp<-((n[1]-1)*S1+(n[2]-1)*S2)/(sum(n)-2)
+t2 <- t(d)%*%solve(sum(1/n)*Sp)%*%d
+t2
+
+alpha<-0.05
+cval <- (sum(n)-2)*p/(sum(n)-p-1)*qf(1-alpha,p,sum(n)-p-1)
+cval
+```
+#### Since T^2 = 9 > 6.76 the null hypothesis is rejected at 5% level of significance. 
+
+### Part 2
+#### Confidence Region
+```{r}
+es<-eigen(sum(1/n)*Sp)
+e1<-es$vec %*% diag(sqrt(es$val))
+r1<-sqrt(cval)
+theta<-seq(0,2*pi,len=250)
+v1<-cbind(r1*cos(theta), r1*sin(theta))
+pts<-t(d-(e1%*%t(v1)))
+plot(pts,type="l",main="Confidence Region for Bivariate Normal",xlab=expression(paste(mu, "(1)")), ylab=expression(paste(mu, "(2)")),asp=1)
+segments(0,d[2],d[1],d[2],lty=2) # highlight the center
+segments(d[1],0,d[1],d[2],lty=2)
+
+th2<-c(0,pi/2,pi,3*pi/2,2*pi)   #adding the axis
+v2<-cbind(r1*cos(th2), r1*sin(th2))
+pts2<-t(d-(e1%*%t(v2)))
+segments(pts2[3,1],pts2[3,2],pts2[1,1],pts2[1,2],lty=3)  
+segments(pts2[2,1],pts2[2,2],pts2[4,1],pts2[4,2],lty=3)
+
+# since we reject the null, we use the simultaneous confidence intervals
+# to check the significant components
+```
+### Part 3
+#### Simultaneous confidence intervals
+
+```{r}
+wd<-sqrt(cval*diag(Sp)*sum(1/n))
+Cis<-cbind(d-wd,d+wd)
+
+# 95% simultaneous confidence interval
+Cis
+#plot(Cis[1][1]:0, 1:10, type="l", lty=2)
+```
+### Part 4
+#### Bonferroni simultaneous confidence intervals
+```{r}
+wd.b<- qt(1-alpha/(2*p),n[1]+n[2]-2) *sqrt(diag(Sp)*sum(1/n))
+Cis.b<-cbind(d-wd.b,d+wd.b)
+# 95% Bonferroni simultaneous confidence interval
+Cis.b
+# both component-wise simultaneous confidence intervals do not contain 0, so they have significant differences.
+```
+
+
+## Number 4
+#### two-sample Hotelling's T2 test
+```{r}
+# now we perform the two-sample Hotelling T^2-test
+n<-c(45,55)
+p<-2
+xmean1<-c(204.4,556.6)
+xmean2<-c(130,355)
+d<-xmean1-xmean2
+S1 <- matrix(c(13825.3, 23823.4, 23823.4, 73107.4), nrow=2)
+S2 <- matrix(c(8632.0, 19616.7, 19616.7, 55964.5), nrow=2)
+
+Sp<-((n[1]-1)*S1+(n[2]-1)*S2)/(sum(n)-2)
+t2 <- t(d)%*%solve(sum(1/n)*Sp)%*%d
+t2
+
+alpha<-0.05
+cval <- (sum(n)-2)*p/(sum(n)-p-1)*qf(1-alpha,p,sum(n)-p-1)
+cval
+```
+
+#### Since T^2 = 16.06 > 6.24 the null hypothesis is rejected at 5% level of significance. 
+
+```{r}
+a <- solve(Sp)%*%d
+a
+```
+
+#### Where a is the linear combination of mean components most responsbile for the rejection of the null hypothesis.  

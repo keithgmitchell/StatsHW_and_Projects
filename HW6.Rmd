@@ -1,0 +1,248 @@
+---
+title: "HW6"
+author: "Keith Mitchell"
+date: "3/7/2020"
+output: pdf_document
+---
+
+# Question 1:
+a) Give the formula for the first and second principle components 
+```{r}
+X <- as.matrix(cbind(c(2,2,2,0,-1,-2,-3), c(2,4,6,0,-4,-4,-4)))
+X
+```
+
+```{r}
+cov <- solve(t(X)%*%X)
+cov
+cov <- cov(X)
+cov
+ev <- eigen(cov)
+ev$values
+ev$vectors
+```
+
+
+## So the first principle component is the eigen vector corresponding to the largest eigenvalue which is the first column above
+```{r}
+ev$vectors[,1]
+```
+## So the second principle component is the eigen vector corresponding to the second largest eigenvalue which is the first column above
+```{r}
+ev$vectors[,2]
+```
+
+b) Determine the proportion of total sample variance due to the first sample principal component.
+```{r}
+ev$values[1]/sum(ev$values)
+```
+
+c) Compare the contributions of the two variates to the determination of the first sample principal component based on loadings
+## The loadings are the components of the eigenvector so the contribution of the first variate is 0.42 while the contribution of the second variate is 0.903. 
+
+d) Compare the contributions of the two variates to the determination of the first sample principal component based on sample correlations
+
+```{r}
+cor <- cor(X)
+ev <- eigen(cor)
+ev$values
+ev$vectors
+```
+## The contributions are the components of the eigenvector so the contribution of the first variate is 0.707 while the contribution of the second variate is 0.707. 
+
+e) Redo (a)-(d) on the standardized dataset. 
+
+
+
+
+
+
+
+# Question 3:
+## Consider the air polution in table 1.5. Summarize the data in fewer the p=7 dimensions if possible. Conduct a PCA of the data using both the covariance matrix S and the correlation matrix R. What have you learned? Does it make any difference which matrix is chose for analysis? Can the data be summarized in thre or fewer dimensions? Can you interpret the principal components?
+
+```{r}
+data <- read.table("T1-5.DAT", 
+           header=FALSE)
+data <- as.matrix(data)
+data
+
+```
+
+```{r}
+cov <- cov(data)
+cor <- cor(data)
+
+cov
+cor
+```
+
+
+## The eigenvalues and vectors based on the covariance matrix are:
+
+```{r}
+ev <- eigen(cov)
+sum(ev$values)
+ev$values
+ev$vectors
+```
+## So the first and second principal components summarize 95.4% of the variation in the data based on the covariance matrix. This is based on the first and second eigen vector, the formulas for which are:
+
+```{r}
+```
+
+
+
+
+
+
+## In comparison, the eigenvalues and vectors based on the correlation matrix are:
+```{r}
+ev <- eigen(cor)
+sum(ev$values)
+ev$values
+ev$vectors
+```
+
+## So the first and second principal components summarize 95.4% of the variation in the data based on the corrlation matrix. This is based on the first and second eigen vector, the formulas for which are:
+
+
+## Based on these results the choice of the covariance vs the correlation matrix makes a difference. The correlation matrix can be summarized in the first 3 principal components where as the covariance matrix can be summarized in the first two principla components. The data can be effectively summarized in 3 or fewer dimensions. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+names(data) <- c("Wind_X1", "Solar_Radiation_X2", "CO_X3", "NO_X4", "NO2_X5", "O3_X6", "HC_X7")
+
+# use sample correlation matrix
+data.pc <- princomp(data, cor=TRUE)
+data.pc
+summary(data.pc, loadings = TRUE)
+
+```
+```{r}
+
+# Showing the eigenvalues of the correlation matrix:
+(data.pc$sdev)^2
+
+# A scree plot:
+plot(1:(length(data.pc$sdev)),  (data.pc$sdev)^2, type='b', 
+     main="Scree Plot", xlab="Number of Components", ylab="Eigenvalue Size")
+
+# Where does the "elbow" occur?
+# What seems to be a reasonable number of PCs to use?
+
+# Plotting the PC scores for the sample data in the space of the first two principal components:
+par(pty="s")
+plot(data.pc$scores[,1], data.pc$scores[,2], 
+     xlab="PC 1", ylab="PC 2", type ='n', lwd=2)
+# labeling points with state abbreviations:
+text(data.pc$scores[,1], data.pc$scores[,2], cex=0.7, lwd=2)
+
+# We see the Southeastern states grouped in the bottom left 
+# and several New England states together in the bottom right.
+
+# The biplot can add information about the variables to the plot of the first two PC scores:
+
+biplot(data.pc, xlabs=data.abb)
+```
+
+
+```{r}
+# Example 1 US State
+
+help(state.x77)
+state.x77
+```
+
+
+
+```{r}
+# Example 1 US State
+
+help(state.x77)
+
+state.x77.df <- data.frame(state.x77)
+names(state.x77.df) <- c("Popul", "Income", "Illit", "LifeExp", "Murder", "HSGrad", "Frost", "Area")
+
+# use sample correlation matrix
+state.pc <- princomp(state.x77.df, cor=TRUE)
+
+summary(state.pc, loadings = TRUE)
+
+```
+
+```{r}
+
+# Showing the eigenvalues of the correlation matrix:
+(state.pc$sdev)^2
+
+# A scree plot:
+plot(1:(length(state.pc$sdev)),  (state.pc$sdev)^2, type='b', 
+     main="Scree Plot", xlab="Number of Components", ylab="Eigenvalue Size")
+
+# Where does the "elbow" occur?
+# What seems to be a reasonable number of PCs to use?
+
+# Plotting the PC scores for the sample data in the space of the first two principal components:
+par(pty="s")
+plot(state.pc$scores[,1], state.pc$scores[,2], 
+     xlab="PC 1", ylab="PC 2", type ='n', lwd=2)
+# labeling points with state abbreviations:
+text(state.pc$scores[,1], state.pc$scores[,2], labels=state.abb, cex=0.7, lwd=2)
+
+# We see the Southeastern states grouped in the bottom left 
+# and several New England states together in the bottom right.
+
+# The biplot can add information about the variables to the plot of the first two PC scores:
+
+biplot(state.pc, xlabs=state.abb)
+```
+
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
+

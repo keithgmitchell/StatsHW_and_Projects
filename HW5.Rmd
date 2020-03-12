@@ -1,0 +1,345 @@
+---
+title: "HW5"
+author: "Keith MItchell"
+date: "2/27/2020"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# QUESTION 1: Multiple Linear Regression
+## 1. Find the least squares estimate beta_hat:
+```{r}
+Z <- as.matrix(cbind(1, c(2,2,2,0,-1,-2,-3), c(1,-2,1,0,1,-2,1)))
+            
+Z
+
+```
+
+```{r}
+y <- as.matrix(cbind(c(1,0,1,0,-1,0,-1)))
+y
+```
+
+```{r}
+beta_hat <- solve(t(Z)%*%Z)%*%t(Z)%*%y
+beta_hat
+```
+## 2. Find the R^2 statistic:
+
+```{r}
+mean(y)
+```
+```{r}
+y_hat <- Z%*%beta_hat
+y_hat
+```
+```{r}
+ess <- (y_hat-mean(y))^2
+sum(ess)
+```
+
+```{r}
+tss <- (y-mean(y))^2
+sum(tss)
+```
+
+```{r}
+r_sq <- sum(ess)/sum(tss)
+r_sq
+```
+## 3. Find \(\hat{\sigma^2}\) and \(\hat{Cov(\vec{\beta})}\)
+### n is the number of observed instances (or data to learn from) for each r.
+#### This is equal to the number of rows in Z = 7
+### r is the number of observed variables for which each n has a value. 
+#### So this is number of columns of data in Z = 2
+```{r}
+
+n <- 7
+r <- 2
+y_hat <- Z%*%beta_hat
+eps_hat <- y-y_hat
+sigma_sq <- (1/(n-r-1))*(sum(eps_hat^2))
+(sum(eps_hat^2))
+sigma_sq
+```
+
+```{r}
+cov_hat_of_beta <- sigma_sq*solve(t(Z)%*%Z)
+cov_hat_of_beta
+# TODO make sure nothing else dependent on this
+```
+
+## 4. Find the 95% confidence interval for \(\beta_1\)
+```{r}
+alpha <-0.05
+half_dis <- sqrt(cov_hat_of_beta[2,2])*abs(qt(alpha/2,n-r-1))
+B_j_exist_upper <- beta_hat[2] + half_dis
+B_j_exist_lower <- beta_hat[2] - half_dis
+B_j_exist_lower
+B_j_exist_upper
+```
+
+
+
+
+## 5. Find the 95% simultaneous confidence intervals for \(\beta_0\), \(\beta_1\), \(\beta_2\) based on the confidence region
+```{r}
+for (val in c(1,2,3))
+{
+  c_range <- (cov_hat_of_beta[val,val])^(1/2)*(((r+1)*(qf(1-alpha,r+1,n-r-1)))^(1/2))
+  B_j_exist_upper <- beta_hat[val] + c_range
+  B_j_exist_lower <- beta_hat[val] - c_range
+  print (sprintf("Beta-%s", val-1))
+  beta_hat[val]
+  print(B_j_exist_lower)
+  print(B_j_exist_upper)
+}
+```
+
+## 6. Find the 95% simultaneous confidence intervals for \(\beta_0\), \(\beta_1\), \(\beta_2\) based on Bonferroni Correction
+```{r}
+for (val in c(1,2,3))
+{
+  t_range <- (cov_hat_of_beta[val,val])^(1/2)*(abs((qt((alpha)/(2*(r+1)), n-r-1))))
+  B_j_exist_upper <- beta_hat[val] + t_range
+  B_j_exist_lower <- beta_hat[val] - t_range
+  print (sprintf("Beta-%s", val-1))
+  beta_hat[val]
+  print(B_j_exist_lower)
+  print(B_j_exist_upper)
+}
+```
+
+
+## 7. Test H_0: \(\beta_1\) = \(\beta_2\) = 0 at the level of \(\alpha\)=0.05
+```{r}
+C<- as.matrix(rbind(c(0,1,0), c(0,0,1)))
+new_beta_hat <- C%*%beta_hat
+new_beta_hat
+```
+
+```{r}
+Y <- C%*%solve(t(Z)%*%Z)%*%t(C)
+Y
+```
+
+```{r}
+q=0
+r=2
+lhs <- (1/sigma_sq)*t(new_beta_hat)%*%solve(Y)%*%new_beta_hat
+cval <- (r-0)*qf(1-alpha, df1=2, df2=4)
+cval
+lhs
+```
+
+
+##### The since the statistic is less then the critical value we fail to reject the null hypothesis.
+
+## 8. Find a 95% confidence interval for the mean response \(E(Y_0)\) =  \(\beta_0\) + \(\beta_1\)\(\bar{z_1}\) + \(\beta_2\)\(\bar{z_2}\)
+### TODO: write out the latex equation for this part 
+```{r}
+z_0 <- as.matrix(colMeans(Z))
+z_0_beta_hat <- t(z_0)%*%beta_hat
+z_0_beta_hat
+```
+
+```{r}
+statistic<-qt(1-(0.05/2),n-r-1)
+ans<-t(z_0)%*%(solve(t(Z)%*%Z))%*%z_0
+interval <- sqrt(sigma_sq)*statistic*sqrt(ans)
+int_low <- z_0_beta_hat - interval
+int_up <- z_0_beta_hat + interval
+int_low
+int_up
+```
+
+## 9. Find a 95% prediction interval for the mean response Y_0 corresponding to \(\bar{z_1}\), \(\bar{z_2}\)
+### TODO: write out the latex equation for this part 
+```{r}
+interval <- sqrt(sigma_sq)*statistic*sqrt(1+ans)
+int_low <- z_0_beta_hat - interval
+int_up <- z_0_beta_hat + interval
+int_low
+int_up
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# QUESTION 2: Multiple Linear Regression
+## 1. Find the least squares estimate beta_hat:
+```{r}
+Z <- as.matrix(cbind(1, c(15.31,15.20,16.25,14.33,14.57,17.33,
+                          14.48,14.91,15.25,13.89,15.18,14.44,
+                          14.87,18.63,15.20,25.76,19.05,15.37,
+                          18.06,16.35), 
+                        c(57.3,63.8,65.4,57.0,63.8,63.2,60.2,
+                          57.7,56.4,55.6,62.6,63.4,60.2,67.2,
+                          57.1,89.6,68.6,60.1,66.3,65.8)))
+            
+Z
+
+```
+
+```{r}
+y <- as.matrix(cbind(c(74.8,74.0,72.9,70.0,74.9,76.0,72.0,73.5,
+                       74.5,73.5,71.5,71.0,78.9,86.5,68.0,102,
+                       84,69,88,76)))
+y
+```
+
+```{r}
+beta_hat <- solve(t(Z)%*%Z)%*%t(Z)%*%y
+beta_hat
+```
+## 2. Find the R^2 statistic:
+
+```{r}
+y_hat <- Z%*%beta_hat
+y_hat
+```
+```{r}
+ess <- (y_hat-mean(y))^2
+sum(ess)
+```
+
+```{r}
+tss <- (y-mean(y))^2
+sum(tss)
+```
+
+```{r}
+r_sq <- sum(ess)/sum(tss)
+r_sq
+```
+## 3. Find \(\hat{\sigma^2}\) and \(\hat{Cov(\vec{\beta})}\)
+### n is the number of observed instances (or data to learn from) for each r.
+#### This is equal to the number of rows in Z = 20
+### r is the number of observed variables for which each n has a value. 
+#### So this is number of columns of data in Z = 2
+```{r}
+
+n <- 20
+r <- 2
+y_hat <- Z%*%beta_hat
+eps_hat <- y-y_hat
+sigma_sq <- (1/(n-r-1))*(sum(eps_hat^2))
+(sum(eps_hat^2))
+sigma_sq
+```
+
+```{r}
+cov_hat_of_beta <- sigma_sq*solve(t(Z)%*%Z)
+cov_hat_of_beta
+```
+
+## 4. Find the 95% confidence interval for \(\beta_1\)
+```{r}
+alpha <-0.05
+B_j_exist_upper <- beta_hat[2] + (sigma_sq*cov_hat_of_beta[2,2])^(1/2)*qt(1-alpha/2,n-r-1)
+B_j_exist_lower <- beta_hat[2] - (sigma_sq*cov_hat_of_beta[2,2])^(1/2)*qt(1-alpha/2,n-r-1)
+B_j_exist_lower
+B_j_exist_upper
+```
+
+
+## 5. Find the 95% simultaneous confidence intervals for \(\beta_0\), \(\beta_1\), \(\beta_2\) based on the confidence region
+```{r}
+for (val in c(1,2,3))
+{
+  c_range <- (cov_hat_of_beta[val,val])^(1/2)*(((r+1)*(qf(1-alpha,r+1,n-r-1)))^(1/2))
+  B_j_exist_upper <- beta_hat[val] + c_range
+  B_j_exist_lower <- beta_hat[val] - c_range
+  print (sprintf("Beta-%s", val-1))
+  beta_hat[val]
+  print(B_j_exist_lower)
+  print(B_j_exist_upper)
+}
+```
+
+## 6. Find the 95% simultaneous confidence intervals for \(\beta_0\), \(\beta_1\), \(\beta_2\) based on Bonferroni Correction
+```{r}
+for (val in c(1,2,3))
+{
+  t_range <- (cov_hat_of_beta[val,val])^(1/2)*(abs((qt((alpha)/(2*(r+1)), n-r-1))))
+  B_j_exist_upper <- beta_hat[val] + t_range
+  B_j_exist_lower <- beta_hat[val] - t_range
+  print (sprintf("Beta-%s", val-1))
+  beta_hat[val]
+  print(B_j_exist_lower)
+  print(B_j_exist_upper)
+}
+```
+
+
+## 7. Test H_0: \(\beta_1\) = \(\beta_2\) = 0 at the level of \(\alpha\)=0.05
+```{r}
+C<- as.matrix(rbind(c(0,1,0), c(0,0,1)))
+new_beta_hat <- C%*%beta_hat
+new_beta_hat
+```
+
+```{r}
+Y <- C%*%solve(t(Z)%*%Z)%*%t(C)
+Y
+```
+
+```{r}
+q=0
+r=2
+lhs <- (1/sigma_sq)*t(new_beta_hat)%*%solve(Y)%*%new_beta_hat
+cval <- (r-0)*qf(1-alpha, df1=2, df2=4)
+cval
+lhs
+```
+
+
+##### The since the statistic is greater then the critical value we can reject the null hypothesis.
+
+## 8. Find a 95% confidence interval for the mean response \(E(Y_0)\) =  \(\beta_0\) + \(\beta_1\)\(\bar{z_1}\) + \(\beta_2\)\(\bar{z_2}\)
+### write out the latex equation for this part
+```{r}
+z_0 <- as.matrix(colMeans(Z))
+z_0_beta_hat <- t(z_0)%*%beta_hat
+z_0_beta_hat
+```
+
+```{r}
+statistic<-qt(1-(0.05/2),n-r-1)
+ans<-t(z_0)%*%(solve(t(Z)%*%Z))%*%z_0
+interval <- sqrt(sigma_sq)*statistic*sqrt(ans)
+int_low <- z_0_beta_hat - interval
+int_up <- z_0_beta_hat + interval
+int_low
+int_up
+```
+
+## 9. Find a 95% prediction interval for the mean response Y_0 corresponding to \(\bar{z_1}\), \(\bar{z_2}\)
+### TODO: write out the latex equation for this part 
+```{r}
+interval <- sqrt(sigma_sq)*statistic*sqrt(1+ans)
+int_low <- z_0_beta_hat - interval
+int_up <- z_0_beta_hat + interval
+int_low
+int_up
+```
+
+
