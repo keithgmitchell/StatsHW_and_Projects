@@ -19,18 +19,19 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 # now we perform the two-sample Hotelling T^2-test
-n<-c(18,18)
-p<-2
-xmean1<-c(85,83)
-xmean2<-c(85,87)
+n<-c(8,8)
+p<-3
+xmean1<-c(82,81,80)
+xmean2<-c(80,81,82)
 d<-xmean1-xmean2
-S1<-matrix(c(16, 8, 8, 16), nrow=2)
-S2<-matrix(c(16, 8, 8, 16), nrow=2)
+solve(matrix(c(0.5,-0.25,-0.25,0.5), nrow=2))
+S1<-matrix(c(9,5,5,5,9,5,5,5,9), nrow=3)
+S2<-matrix(c(9,5,5,5,9,5,5,5,9), nrow=3)
 Sp<-((n[1]-1)*S1+(n[2]-1)*S2)/(sum(n)-2)
+Sp
 t2 <- t(d)%*%solve(sum(1/n)*Sp)%*%d
-t2
-
 alpha<-0.05
+t2
 cval <- (sum(n)-2)*p/(sum(n)-p-1)*qf(1-alpha,p,sum(n)-p-1)
 cval
 ```
@@ -66,7 +67,6 @@ segments(pts2[2,1],pts2[2,2],pts2[4,1],pts2[4,2],lty=3)
 ```{r}
 wd<-sqrt(cval*diag(Sp)*sum(1/n))
 Cis<-cbind(d-wd,d+wd)
-
 # 95% simultaneous confidence interval
 Cis
 #plot(Cis[1][1]:0, 1:10, type="l", lty=2)
@@ -74,7 +74,9 @@ Cis
 ### Part 4
 #### Bonferroni simultaneous confidence intervals
 ```{r}
-wd.b<- qt(1-alpha/(2*p),n[1]+n[2]-2) *sqrt(diag(Sp)*sum(1/n))
+wd.b<- 2.977*sqrt(diag(Sp)*sum(1/n))
+sqrt(diag(Sp)*sum(1/n))
+qt(1-alpha/(2*p),n[1]+n[2]-2)
 Cis.b<-cbind(d-wd.b,d+wd.b)
 # 95% Bonferroni simultaneous confidence interval
 Cis.b
@@ -138,6 +140,7 @@ segments(pts2[2,1],pts2[2,2],pts2[4,1],pts2[4,2],lty=3)
 #### Simultaneous confidence intervals
 
 ```{r}
+
 wd<-sqrt(cval*diag(Sp)*sum(1/n))
 Cis<-cbind(d-wd,d+wd)
 

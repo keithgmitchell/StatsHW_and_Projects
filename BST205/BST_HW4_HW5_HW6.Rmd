@@ -1,0 +1,213 @@
+---
+title: "BST225"
+output: pdf_document
+---
+
+# HW5
+## 1a)
+Calculate sample size using all these values, change values for one factor at one time and keep other factors the sampe; and make a sample size analysis table; then summarize how difference between u1 and u0, sigma and power affect sample size
+```{r}
+for (power in c(0.95,0.9,0.85,0.8))
+{
+  for (sigma_1 in c(2.2,2.0,1.8))
+  {
+    for (sigma_2 in c(1.8))
+    {
+      for (mu1_min_mu2 in c(1.5,1.0,0.5))
+      {
+        
+        n <- ((sigma_1^2 + sigma_2^2)/(mu1_min_mu2)^2)*(qnorm(0.05/2)+qnorm(1-power))^2
+        print (sprintf("Power: %s  Sigma1: %s  Sigma2: %s  Mu1-Mu2: %s  Sample size: %s",  power, sigma_1, sigma_2, mu1_min_mu2, round(n)))
+      }
+    }
+  }
+}
+  
+```
+- As difference between mu1 and mu2 decrease the sample size needs to increase. 
+- As the pooled variance decreases then the necessary sample size will also decrease. 
+- As the power decreases the sample size decreases. 
+
+
+## 1b) Is this what is wanted?Z
+300 and 700 as n1 and n2
+Calculate power using parameters values and make a power analysis table and summarize the effect of the parameters. 
+
+### For n2, For n1 (same result as n2)
+
+```{r}
+n1 <- 300
+n2 <- 700
+k <- n1/n2
+
+for (sigma_2 in c(2.2,2.0,1.8))
+{
+  for (mu1_min_mu2 in c(1.5,1.0,0.5))
+  {  
+    q_norm_power <- sqrt(n2/((sigma_2^2*(1+1/k))/(mu1_min_mu2)^2)) + qnorm(0.05/2)
+    print (sprintf("Power: %s  Sigma1: %s  Sigma2: %s  Mu1-Mu2: %s ",  pnorm(q_norm_power), sigma_1, sigma_2, mu1_min_mu2))
+  }
+}  
+
+
+
+```
+- As the sample size increase so does the power
+- As the difference between the two groups incrases then the power increases
+- As the pooled variance between the two groups increases the the power decreases
+
+
+
+
+## 2)
+Test non-inferiority with two different margins and study how the values of margins affect the sample size. 
+```{r}
+for (power in c(0.9,0.8))
+{
+  for (sigma_1 in c(2.2))
+  {
+    for (sigma_2 in c(1.8))
+    {
+      for (mu1_min_mu2 in c(1.0,0.5))
+      {
+        for (margin in c(1.1,0.4))
+        {
+          n <- ((sigma_1^2 + sigma_2^2)/(mu1_min_mu2-margin)^2)*(qnorm(0.05/2)+qnorm(1-power))^2
+          print (sprintf("Power: %s  Sigma1: %s  Sigma2: %s  Mu1-Mu2: %s  Sample size: %s  Margin: %s",  power, sigma_1, sigma_2, mu1_min_mu2, round(n), margin))
+        }
+      }
+    }
+  }
+}
+```
+- As the difference between mu1-mu2 and margin decreases then the necessary sample size to show inferiority increases.
+
+Test equivalence with two different margins and study how the values of margins affect the sample size. 
+```{r}
+for (power in c(0.9,0.8))
+{
+  for (sigma_1 in c(2.2))
+  {
+    for (sigma_2 in c(1.8))
+    {
+      for (mu1_min_mu2 in c(1.0,0.5))
+      {
+        for (margin in c(1.1,0.4))
+        {
+          n <- ((sigma_1^2 + sigma_2^2)/(mu1_min_mu2-margin)^2)*(qnorm(0.05/2)+qnorm((1-power)/2))^2
+          print (sprintf("Power: %s  Sigma1: %s  Sigma2: %s  Mu1-Mu2: %s  Sample size: %s  Margin: %s",  power, sigma_1, sigma_2, mu1_min_mu2, round(n), margin))
+        }
+      }
+    }
+  }
+}
+```
+- As the difference between abs(mu1-mu2) and margin decreases then the necessary sample size to show equivalence increases.
+
+
+
+
+# HW6
+
+## 1a)
+Calculate sample size using all these values, change values for one factor at one time and keep other factors the sampe; and make a sample size analysis table; then summarize how difference between p1 and p2, sigma and power affect sample size
+```{r}
+for (power in c(0.95,0.9,0.85,0.8))
+{
+  for (p_1 in c(0.85))
+  {
+    for (p_2 in c(0.8,0.7,0.6))
+    {
+        n <- ((p_1*(1-p_1) + p_2*(1-p_2))/(p_1-p_2)^2)*(qnorm(0.05/2)+qnorm(1-power))^2
+        print (sprintf("Power: %s  P1: %s  P2: %s  Sample size: %s",  power, p_1, p_2, round(n)))
+    
+    }
+  }
+}
+  
+```
+- As power decreases so does the necessary sample size
+- As the difference between p_1 and p_2 increases the sample size decreases
+
+
+## 1b)
+Sample size = 90,170  for each arm, calculate power using the above parameter values, change values for one factor at one time and keep other factors the same. Make a power analysis table and summarize how the difference between p1 and p2, and sample size affect power. 
+
+```{r}
+for (n_1 in c(80,90))
+{
+  for (n_2 in c(170,180,190))
+  {
+    for (p_1 in c(0.85))
+    {
+      for (p_2 in c(0.8,0.7,0.6))
+      {
+          k <- n_1/n_2
+          q_norm_power <- sqrt(n/((((p_1*(1-p_1))/k + p_2*(1-p_2))/(p_1-p_2)^2))) + qnorm(0.05/2)
+          print (sprintf("Power: %s  P1: %s  P2: %s  N1: %s  N2: %s",  pnorm(q_norm_power), p_1, p_2, n_1, n_2))
+      
+      }
+    }    
+  }
+}
+  
+```
+
+- As the difffernce between p_1 and p_2 increases then so does the power
+- As the sample size increases for n_1 then the power increases.
+- As the sample size incrase for n_2 then the power increases
+
+
+
+
+
+
+# HW7 
+Trial to compare a new therapy with a routine bath care in terms of the time to infection.
+- Hazard ratio (HR) of 1.5, 2.5, (beta=log(HR)), respectively, for routine bathing care/test therapy is considered of clinical importance.
+- 60%, 80% of patients’ infection may be observed, respectively (=d)
+- n=n1=n2 (p1=p2=0.5), equal size treatment groups
+- Significance level: a=0.05
+
+## 1A)
+If Power = 0.8, b=1-0.8=0.2, calculate sample size for above various HRs and d’s.
+```{r}
+for (d in c(0.6, 0.8))
+{
+  for (hr in c(1.5, 2.0, 2.5))
+  {
+    n <- (qnorm(0.05/2) + qnorm(1-0.8))^2/(log(hr)^2*0.5*0.5*d)
+    print(sprintf("HR: %s  Patiends observed(d): %s  Sample size: %s", hr, d, n))
+  }    
+}
+
+```
+
+
+## 1B)
+If n1 = n2 = 20, 50, respectively, calculate power for above various HRs and d’s.
+```{r}
+for (n in c(20,50))
+{
+  for (d in c(0.6, 0.8))
+  {
+    for (hr in c(1.5, 2.5))
+    {
+      q_norm_power <- - sqrt((n*(log(hr)^2*0.5*0.5*d))) - (qnorm(0.05/2))
+      print(sprintf("HR: %s  Patiends observed(d): %s  Sample size: %s  Power: %s", hr, d, n, pnorm(q_norm_power)))
+    }    
+  }
+}
+
+```
+
+
+
+
+
+
+
+
+
+
+

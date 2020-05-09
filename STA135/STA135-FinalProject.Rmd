@@ -1,0 +1,852 @@
+---
+title: "Final Project"
+author: "Keith Mitchell"
+date: "3/7/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+\begin{center}
+STA135 Final Project (UC Davis)
+\end{center}
+
+\begin{center}
+Instructor: Professor Li
+\end{center}
+
+\begin{center}
+TA: Cong Xu
+\end{center}
+
+---
+
+## Dataset 1: Conduct multiple linear regression;
+## Dataset 2: Conduct two-sample test and LDA;
+## Dataset 3: Conduct PCA.
+
+### For each data analysis, you should write in full sentences, and have thefollowing sections for the body of your report.
+1) Introduction: Briefly summarize the goal of the analysis in your own words;
+2) Summary: Summarize your data by plots or sample estimates; 
+3) Analysis: Implement the analysis based on what you have done in homework;
+4) Conclusion: Describe and interpret your findings.
+
+### Details:
+1) A title page including your name, the name of the class, and the name of your instructor.
+2) Do not include R code in the body of your report.  R code used to produce the results should all go to the appendix.(echo=FALSE, results='asis')
+3) Typed.
+4) Double-sided pages.
+
+
+---
+
+<P style="page-break-before: always">
+\newpage
+
+---
+
+```{r echo=FALSE, results='asis'}
+library(ggplot2)
+library(plyr)
+library(knitr)
+library(kableExtra)
+library(latex2exp)
+```
+
+
+# DATASET 1: Multiple Linear Regression
+
+
+## INTRODUCTION: 
+### A company is interested in considering the purchase of a computer but first must assess their future needs in order to determine the proper equipment. A computer scientist collected data from seven similar company sites so that a forecast equation of computer-hardware requirements for inventory management could be developed. (pg 380) This is an important concept for companies running web infrastructure to predict for a variety of reasons. 
+1) It is preferable not to overpay for CPU time that will likely not get used for the company web platform. 
+2) It is important for the stability of the web platform that it has the necessary CPU resources to maintain the stability of their web platform to keep customers happy and making purchases. 
+### The goal of this analysis will be to introduce a model that can best predict the necessary CPU time needed given a set of their own variables ("Orders(thousands)" and "Add-delete items(thousands)") iwith a high degree of confidence. 
+
+
+
+
+## SUMMARIZE DATA: The first colum of our data is the Orders(in thousands), and the Second column is the Add-Delete items (in thousands)
+### Lets summarize our data first and see what the numbers look like. 
+```{r echo=FALSE, results='asis'}
+data <- read.table("T7-3.DAT", 
+           header=FALSE)
+colnames(data) <- c("Orders(thousands)", "Add-delete items(thousands)","CPU time(hours)")
+Z <- as.matrix(cbind(1, data[1], data[2]))
+y <- as.matrix(data[3])
+colnames(y) <- c("CPU time(hours)")
+
+
+data %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+- This table is the data for Z, the predictors, and for y the variable to be forecasted from the predictors. 
+
+```{r echo=FALSE, results='asis'}
+
+summary(data) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+- This table is the summary data for  Z, the p redictors, and for y the variable to be forecasted from the predictors.
+
+
+### Now lets visualize these numbers with a box plot of each of the variables, including the one we are trying to predict.
+### Lets also just get a preliminarly look at what our variables "Orders(thousands)" andn "Add-delete items(thousands)" look like when graphed against the variable we hope to predict "CPU time"
+```{r echo=FALSE, results='asis'}
+#plot(Z[,2],y, ylab="CPU time", xlab="Orders(thousands)")
+#plot(Z[,3],y, ylab="CPU time", xlab="Add-delete items(thousands)")
+
+ggplot(data, aes(x=`Orders(thousands)`, y=`CPU time(hours)`)) + geom_point() + labs(title="Orders(thousands) vs CPU time(hours)") + xlab("Orders(thousands)") + ylab("CPU time(hourse)") + theme_classic()
+ggplot(data, aes(x=`Add-delete items(thousands)`, y=`CPU time(hours)`)) + geom_point() + labs(title="Add-delete items(thousands) vs CPU time(hours)") + xlab("Add-delete items(thousands)") + ylab("CPU time(hourse)") + theme_classic()
+
+```
+
+### We can already see some patterns in the data but lets formalize this by performing a multiple linear regression to allow the company to predict their CPU Time with confidence based on the "Orders(thousands)" andn "Add-delete items(thousands)". 
+
+
+## DATA ANALYSIS: Multiple linear regression.
+### This is our final predictive function for the value of CPU time given the:
+```{r echo=FALSE, results='asis'}
+beta_hat <- solve(t(Z)%*%Z)%*%t(Z)%*%y
+y_hat <- Z%*%beta_hat
+cat(sprintf("- y = %s*z_1 + %s*z_2 + %s", beta_hat[2], beta_hat[3], beta_hat[1]))
+```
+
+### And we get a \(r^2\) value of our linear prediction:
+```{r echo=FALSE, results='asis'}
+ess <- (y_hat-mean(y))^2
+tss <- (y-mean(y))^2
+r_sq <- sum(ess)/sum(tss)
+cat (sprintf("- %s \n", r_sq))
+```
+
+
+### Next we find \(\hat{\sigma^2}\) and \(\hat{Cov(\vec{\beta})}\)
+- n is the number of observed instances (or data to learn from) for each r.
+- This is equal to the number of rows in Z = 7
+- r is the number of observed variables for which each n has a value. 
+- So this is number of columns of data in Z = 2
+
+####  \(\hat{\sigma^2}\)
+```{r echo=FALSE, results='asis'}
+n <- 7
+r <- 2
+y_hat <- Z%*%beta_hat
+eps_hat <- y-y_hat
+sigma_sq <- (1/(n-r-1))*(sum(eps_hat^2))
+cat (sprintf("- %s \n", sigma_sq))
+```
+
+#### \(\hat{Cov(\vec{\beta})}\)
+
+```{r echo=FALSE, results='asis'}
+cov_hat_of_beta <- sigma_sq*solve(t(Z)%*%Z)
+
+data.frame(cov_hat_of_beta) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+
+### Find a 95% confidence interval for the mean response \(E(Y_0|z_0)\) =  \(\beta_0\) + \(\beta_1\)\(z_{01}\) + \(\beta_2\)\(z_{02}\) when \(z_0\)=[1,130,7.5] (for example)
+```{r echo=FALSE, results='asis'}
+# here we can predict the value of y given any values of x of interest that the company may have
+z_0 <- as.matrix(c(1,130,7.5))
+z_0_beta_hat <- t(z_0)%*%beta_hat
+statistic<-qt(1-(0.05/2),n-r-1)
+ans<-t(z_0)%*%(solve(t(Z)%*%Z))%*%z_0
+interval <- sqrt(sigma_sq)*statistic*sqrt(ans)
+int_low <- z_0_beta_hat - interval
+int_up <- z_0_beta_hat + interval
+cat (sprintf("- Lower Bound (CPU time (hours): %s \n", int_low))
+cat (sprintf("- Upper Bound (CPU time (hours): %s \n", int_up))
+```
+
+### Find a XX% prediction interval for the mean response \(Y_0\) corresponding to \(\bar{z_1}\), \(\bar{z_2}\). This correspond to a 95% prediction interval for a new facility's CPU requirement corresponding to the same \(z_0\).
+```{r echo=FALSE, results='asis', results='asis'}
+
+for (val in c(0.05,0.01,0.005,0.001))
+{
+  z_0 <- as.matrix(c(1,130,7.5))
+  z_0_beta_hat <- t(z_0)%*%beta_hat
+  statistic<-qt(1-(val/2),n-r-1)
+  ans<-t(z_0)%*%(solve(t(Z)%*%Z))%*%z_0
+  interval <- sqrt(sigma_sq)*statistic*sqrt(1+ans)
+  int_low <- z_0_beta_hat - interval
+  int_up <- z_0_beta_hat + interval
+  cat (sprintf("- Alpha value: %s  Interval: %s  Lower bound: %s  Upper bound: %s \n",  val, interval, int_low, int_up ))
+
+}
+```
+
+
+## CONCLUSION
+### The company can use the following function to predict the amount of CPU time that they will need for a new set of parameters: 
+- y = 1.07898250130454\(z_1\) + 0.419888473166963\(z_2\) + 8.42368896741667
+  - \(z_1\)  is the value of the companies number of orders (in thousands) that they need to know CPU time requirements for
+  - \(z_2\)  is the companies add-delete items (in thousands) that they need to know CPU time requirements for
+  - y is the predicted CPU time needed. 
+
+### Then, as generated in the last portion of the data analysis, we can see that if we want to be XX% (where an alpha value of 0.05 corresponds to 95%, alpha of 0.001 corresponds to 99.9% etc.) sure that the true value of CPU time will fall within the lower and upper bound we will add and subtract the values generated to the value of y predicted above for some value of \(z_{01}\) being the orders in thousands and \(z_{02}\) being the add-delete items in thousands. 
+- Alpha value: 0.05  Interval: 3.91241721099891  Lower bound: 147.92816047476  Upper bound: 155.752994896758 
+- Alpha value: 0.01  Interval: 6.48784302704889  Lower bound: 145.35273465871  Upper bound: 158.328420712808 
+- Alpha value: 0.005  Interval: 7.88779247898333  Lower bound: 143.952785206776  Upper bound: 159.728370164743 
+- Alpha value: 0.001  Interval: 12.1331741930768  Lower bound: 139.707403492682  Upper bound: 163.973751878836
+
+#### In addtion, these values can automatically be generated with the following script by just altering the line z_0 <- as.matrix(c(1,130,7.5)) by replacing "130 and 7.5 in the following manner. The general line would be z_0 <- as.matrix(c(1,\(z_{01}\),\(z_{02}\))) where the value of \(z_{01}\) is the orders in thousands and \(z_{02}\) is the add-delete items in thousands. 
+```
+for (val in c(0.05,0.01,0.005,0.001))
+{
+  z_0 <- as.matrix(c(1,130,7.5))
+  z_0_beta_hat <- t(z_0)%*%beta_hat
+  statistic<-qt(1-(val/2),n-r-1)
+  ans<-t(z_0)%*%(solve(t(Z)%*%Z))%*%z_0
+  interval <- sqrt(sigma_sq)*statistic*sqrt(1+ans)
+  int_low <- z_0_beta_hat - interval
+  int_up <- z_0_beta_hat + interval
+  print (sprintf("Alpha value: %s  Interval: %s  Lower bound: %s  Upper bound: %s",  val, interval, int_low, int_up ))
+}
+```
+
+
+### As a precaution we do suggest gather more data on this situation if possible. This will increase the strength of the analysis and account for other variables in the situation. This would be achieved by increasing the value of n, or observed situaitons (company CPU time requirements), and r, the number of observed varaibles upon which to make the prediction of CPU time (orders, add-delete items, etc.). Please contact if this is the case and a more robust script will be made to factor in variations in new potential data gathering.
+
+
+
+
+
+
+---
+
+<P style="page-break-before: always">
+\newpage
+
+---
+
+
+
+
+
+
+# DATASET 2: Two Sample Test and LDA
+
+
+## INTRODUCTION: 
+### Data has been gather on hemophilia A carriers. 
+1) Predicting disease based on other characteristics is a common technique that doctors and healthcare workers use to produce a prediction for a given person. 
+2) This is a common method that if not used solely for diagnosing a disease is used in conjunction with other tests to increase the statistical power of the diagnoses.
+
+### The first goal of this analysis will be to perform two sample test on the data in order to see if there is a significant difference between individuals that are carriers and noncarriers with respect to AHF activity (\(log_{10}\) scale) and AHF antigen (\(log_{10}\) scale). Group 1 is considered to be the non carrier group while group 2 is considered to be the obligatory carrier group. 
+
+### The second goal of this analysis will be to perform linear discriminant analysis to try and predict the best possible distinguishable boundary between carriers and non carriers with respect to AHF activity (\(log_{10}\) scale) and AHF antigen (\(log_{10}\) scale).
+
+## SUMMARIZE DATA:
+### Lets look at the data as a whole (with the two groups together (carriers and non carriers))
+```{r echo=FALSE, results='asis'}
+data <- read.table("T11-8.DAT", 
+           header=FALSE, colClasses = c("factor", "numeric", "numeric"))
+colnames(data) <- c("Group", "AHF_activity", "AHF_antigen")
+levels(data$Group)[levels(data$Group)=="1"] <- "Non-carrier"
+levels(data$Group)[levels(data$Group)=="2"] <- "Carrier"
+X <- as.matrix(cbind(data[2], data[3]))
+summary(data[data$Group=="Non-carrier",][2:3]) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F) %>%
+  footnote(general = "This table is the summary data for the Non-carrier group. ",
+           )
+
+summary(data[data$Group=="Carrier",][2:3]) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F) %>%
+  footnote(general = "This table is the summary data for the Carrier group. ",
+           )
+
+```
+
+
+```{r echo=FALSE, results='asis'}
+
+mu <- ddply(data, "Group", summarise, grp.mean=mean(AHF_activity))
+ggplot(data, aes(x=AHF_activity, color=Group, fill=Group)) + geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity',binwidth=0.03) +  geom_density(alpha=.2, fill="#FF6666") + geom_vline(data=mu, aes(xintercept=grp.mean, color=Group), linetype="dashed") + labs(title="Log(AHF Activity) histogram plot",x="Log(AHF Activity)", y = "Counts") + theme_classic()
+
+
+```
+
+
+```{r echo=FALSE, results='asis'}
+mu <- ddply(data, "Group", summarise, grp.mean=mean(AHF_antigen))
+ggplot(data, aes(x=AHF_antigen, color=Group, fill=Group)) + geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity',binwidth=0.03) +  geom_density(alpha=.2, fill="#FF6666") + geom_vline(data=mu, aes(xintercept=grp.mean, color=Group), linetype="dashed") + labs(title="Log(AHF Antigen) histogram plot",x="Log(AHF Antigen)", y = "Counts") + theme_classic()
+
+
+```
+
+
+```{r echo=FALSE, results='asis'}
+ggplot(data, aes(x=AHF_activity, y=AHF_antigen, color=Group)) + geom_point() + labs(title="Log(AHF Activity) vs Log(AHF Antigen)") + xlab("Log(AHF Activity)") + ylab("Log(AHF Antigen)") + theme_classic()
+
+```
+
+
+
+```{r echo=FALSE, results='asis'}
+group_1 <- data[data$Group == "Non-carrier",]
+group_2 <- data[data$Group == "Carrier",]
+```
+
+
+
+## DATA ANALYSIS:
+
+
+### Partial code credit to Prof Li (UC Davis), Weiping Zhang(USTC)
+
+### Two sample test with:
+- Here we want to test the hypothesis that our two groups means (for Log(AHF activity) and Log(AHF antigen)) have a statistically significant difference from each other. The null hypothesis is that the two samples (carriers and non-carriers) are from populations with the same multivariate mean. The alternate hypothesis (if we reject the null hypothesis) is that the two samples are from different populations with different multivariate means. 
+```{r echo=FALSE, results='asis'}
+
+p <- 2
+X_1 <- as.matrix(cbind(group_1[2:3]))
+X_2 <- as.matrix(cbind(group_2[2:3]))
+X <- as.matrix(cbind(data[2:3]))
+
+S1 <- cov(X_1)
+S2 <- cov(X_2)
+n1 <- nrow(X_1)
+n2 <- nrow(X_2)
+
+n<-c(n1,n2)
+xmean1 <- colMeans(X_1)
+xmean2 <- colMeans(X_2)
+
+
+d<-xmean1-xmean2
+
+Sp<-((n[1]-1)*S1+(n[2]-1)*S2)/(sum(n)-2)
+t2 <- t(d)%*%solve(sum(1/n)*Sp)%*%d
+alpha<-0.05
+cval <- (sum(n)-2)*p/(sum(n)-p-1)*qf(1-alpha,p,sum(n)-p-1)
+cat(sprintf("- Since T_^2 = %s > %s (the confidence value), the null hypothesis is rejected at %s level of significance.", t2, cval, alpha))
+
+```
+
+
+
+
+
+
+### Simultaneous confidence intervals
+```{r echo=FALSE, results='asis'}
+wd<-sqrt(cval*diag(Sp)*sum(1/n))
+Cis<-cbind(d-wd,d+wd)
+
+# 95% simultaneous confidence interval
+df <- data.frame(Cis)
+colnames(df) <- c("Lower Bound", "Upper Bound")
+
+data.frame(df) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F, position = "float_right")
+```
+This table is the confidence interval for the difference between the two group at alpha=0.05. This data shows our uncorrected siimultaneous confidence intervals for each of our values based on the difference between the two groups. This means that there is a significant difference between AHF acitivty between carriers and non-carriers since 0 is not included in the confidence interval. There is not a significant difference between AHF antigen levels betweeen carriers and non-carriers since 0 is not included in the confidence interval.
+
+#### We can now graph this confidence interval to better to see the confidence interval across the two axis to see which combinations of values would fall out of the confidence interval 
+
+```{r echo=FALSE, results='asis'}
+
+es<-eigen(sum(1/n)*Sp)
+e1<-es$vec %*% diag(sqrt(es$val))
+r1<-sqrt(cval)
+theta<-seq(0,2*pi,len=250)
+v1<-cbind(r1*cos(theta), r1*sin(theta))
+pts<-t(d-(e1%*%t(v1)))
+plot(pts,type="l",main="Confidence Region for Bivariate Normal",xlab="Log(AHF Activity)", ylab="Log(AHF Antigen)",asp=1)
+segments(0,d[2],d[1],d[2],lty=2) # highlight the center
+segments(d[1],0,d[1],d[2],lty=2)
+
+th2<-c(0,pi/2,pi,3*pi/2,2*pi)   #adding the axis
+v2<-cbind(r1*cos(th2), r1*sin(th2))
+pts2<-t(d-(e1%*%t(v2)))
+segments(pts2[3,1],pts2[3,2],pts2[1,1],pts2[1,2],lty=3)  
+segments(pts2[2,1],pts2[2,2],pts2[4,1],pts2[4,2],lty=3)
+
+```
+
+
+### Bonferroni simultaneous confidence intervals
+```{r echo=FALSE, results='asis'}
+wd.b<- qt(1-alpha/(2*p),n[1]+n[2]-2) *sqrt(diag(Sp)*sum(1/n))
+Cis.b<-cbind(d-wd.b,d+wd.b)
+# 95% Bonferroni simultaneous confidence interval
+# both component-wise simultaneous confidence intervals do not contain 0, so they have significant differences.
+df <- data.frame(Cis.b)
+colnames(df) <- c("Lower Bound", "Upper Bound")
+
+data.frame(df) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F) 
+```
+- This table is the confidence interval for the difference between the two group at alpha=0.05. This data shows our bonferronie corrected simultaneous confidence intervals for each of our values based on the difference between the two groups. This means that there is a significant difference between AHF acitivty between carriers and non-carriers since 0 is not included in the confidence interval. There is not a significant difference between AHF antigen levels betweeen carriers and non-carriers since 0 is not included in the confidence interval.
+
+
+
+### Computing the LDA (linear discriminant analysis) this graphical representation will show us the boundary we will use as our cutoff when performing Fishers rule, based on the Mahalanobis distances.
+
+```{r echo=FALSE, results='asis', warning=FALSE}
+data <- read.table("T11-8.DAT", 
+           header=FALSE, colClasses = c("factor", "numeric", "numeric"))
+colnames(data) <- c("Group", "AHF_activity", "AHF_antigen")
+#legend("topright",legend=c("Alaskan","Canadian"),pch=c(18,20),col=c(2,4),cex=1)
+levels(data$Group)[levels(data$Group)=="1"] <- "Non-carrier"
+levels(data$Group)[levels(data$Group)=="2"] <- "Carrier"
+# Method 1
+
+x1 <- data[data$Group == "Non-carrier",][2:3]
+x2 <- data[data$Group == "Carrier",][2:3]
+
+# compute sample mean vectors:
+x1.mean <- colMeans(x1)
+x2.mean <- colMeans(x2)
+S1 <- cov(x1)
+S2 <- cov(x2)
+
+n1 <- nrow(x1)
+n2 <- nrow(x2)
+n<-c(n1,n2)
+
+# compute pooled estimate for the covariance matrix:
+S.u <- ((n[1]-1)*S1+(n[2]-1)*S2)/(sum(n)-2)
+w <- solve(S.u)%*%(x1.mean-x2.mean)
+w0 <- -(x1.mean+x2.mean)%*%w/2
+ggplot(data, aes(x=AHF_activity, y=AHF_antigen, color=Group)) + geom_point() + labs(title="Log(AHF Activity) vs Log(AHF Antigen)") + xlab("Log(AHF Activity)") + ylab("Log(AHF Antigen)") + theme_classic() + geom_line(aes(data[,2],-(w[1]*data[,2]+w0)/w[2]), color="black")
+```
+
+### Some general setup for fishers rule. We will construct Fisher’s rule. Moreover, we will calculate theapparent error rate. This is the number of incorrectly categorized variables based on the comparison of the Mahalanobis distances.
+```{r echo=FALSE, results='asis'}
+w <- solve(Sp)%*%(xmean1-xmean2)
+correct_group1 <- 0
+correct_group2 <- 0
+incorrect_group1 <- 0
+incorrect_group2 <- 0
+group_list <- data[1]
+incor_df_g1 <- data.frame()
+incor_df_g2 <- data.frame()
+cor_df_g2 <- data.frame()
+cor_df_g1 <- data.frame()
+
+for (val in 1:nrow(X))
+{
+  row <- X[val,]
+  data_check <- data[c(val),]
+
+  group <- group_list[val,]
+  left_side <- t(w)%*%row
+  right_side <- 0.5*t(w)%*%(xmean1+xmean2)
+  if (left_side >= right_side){
+    if (group == "Non-carrier"){
+      cor_df_g1 <- rbind(data_check, cor_df_g1)
+      correct_group1 <- correct_group1 + 1
+    }
+    else{
+      incor_df_g2 <- rbind(data_check, incor_df_g2)
+      incorrect_group2 <- incorrect_group2 + 1
+    }
+  }
+  else{
+    if (group == "Non-carrier"){
+      incor_df_g1 <- rbind(data_check, incor_df_g1)
+      incorrect_group1 <- incorrect_group1 + 1
+    }
+    else{
+      cor_df_g2 <- rbind(data_check, cor_df_g2)
+      correct_group2 <- correct_group2 + 1
+    }
+  }
+}
+
+cat("#### Error rate for Apparent error rate: \n")
+cat(sprintf("- %s \n", (incorrect_group2+incorrect_group1)/(nrow(X))))
+cat("\n")
+cat("#### Number incorrect non-carrier: \n")
+cat(sprintf("- %s \n", incorrect_group1))
+cat("\n")
+cat("#### Number incorrect carrier: \n")
+cat(sprintf("- %s \n", incorrect_group2))
+cat("\n")
+
+```
+
+
+### Lets overlay the ones that were incorrect for each group as a different color on our LDA graph just to confirm. This will allow us to compare where this error rate model compares to Lachenbruch’s holdout. 
+```{r echo=FALSE, results='asis', warning=FALSE}
+
+ggplot() + geom_point(data=incor_df_g1, aes(x=AHF_activity, y=AHF_antigen), color='red') + geom_point(data=cor_df_g1, aes(x=AHF_activity, y=AHF_antigen), color='green') + labs(title="Log(AHF Activity) vs Log(AHF Antigen)") + xlab("Log(AHF Activity)") + ylab("Log(AHF Antigen)") + theme_classic() + geom_line(aes(data[,2],-(w[1]*data[,2]+w0)/w[2]), color="black")
+
+ggplot() + geom_point(data=incor_df_g2, aes(x=AHF_activity, y=AHF_antigen), color='red') + geom_point(data=cor_df_g2, aes(x=AHF_activity, y=AHF_antigen), color='green') + labs(title="Log(AHF Activity) vs Log(AHF Antigen)") + xlab("Log(AHF Activity)") + ylab("Log(AHF Antigen)") + theme_classic() + geom_line(aes(data[,2],-(w[1]*data[,2]+w0)/w[2]), color="black")
+
+
+```
+
+
+### Finally the expected error rate by Lachenbruch’s holdout: this will help fix the fact that apparent error rate can often underestimate the error rate by witholding individual entries, observations in the data and then performing a LDA or Mahalanobis distance without this entry. This entry is then tested in the model as a new observation to see if it is correctly classified or not. As we can see from the graphical representation this can change our results around the border of the LDA. 
+
+
+```{r echo=FALSE, results='asis'}
+correct_group1 <- 0
+correct_group2 <- 0
+incorrect_group1 <- 0
+incorrect_group2 <- 0
+incor_df_g1 <- data.frame()
+incor_df_g2 <- data.frame()
+cor_df_g2 <- data.frame()
+cor_df_g1 <- data.frame()
+
+for (val in 1:nrow(data))
+{
+  # first we want to take out a row in the dataframe
+  data_check <- data[c(val),]
+  data_seg <- data[-c(val),]
+  
+  # then we want to seperate the data into the two groups
+  group_1 <- data_seg[data_seg$Group == "Non-carrier",]
+  group_2 <- data_seg[data_seg$Group == "Carrier",]
+  
+  # we also want a matrix of the data and group_list calculate w based on s_pooled (since size of xmean1/xmean2 and n1/n2 are going to change)
+  X_1 <- as.matrix(cbind(group_1[2:3]))
+  X_2 <- as.matrix(cbind(group_2[2:3]))
+  S1 <- cov(X_1)
+  S2 <- cov(X_2)
+  n1 <- nrow(X_1)
+  n2 <- nrow(X_2)
+  n<-c(n1,n2)
+  xmean1 <- colMeans(X_1)
+  xmean2 <- colMeans(X_2)
+  d<-xmean1-xmean2
+  Sp<-((n[1]-1)*S1+(n[2]-1)*S2)/(sum(n)-2)
+  w <- solve(Sp)%*%(xmean1-xmean2)
+  
+  # lets set row to the row we took out of the dataframe (to match our code from earlier) probably should make this a function call but whatever
+  row <- as.matrix(cbind(data_check[2:3]))[1,]
+  group <- data_check[1][1,]
+  left_side <- t(w)%*%row
+  right_side <- 0.5*t(w)%*%(xmean1+xmean2)
+  if (left_side >= right_side){
+    if (group == "Non-carrier"){
+      cor_df_g1 <- rbind(data_check, cor_df_g1)
+      correct_group1 <- correct_group1 + 1
+    }
+    else{
+      incor_df_g2 <- rbind(data_check, incor_df_g2)
+      incorrect_group2 <- incorrect_group2 + 1
+    }
+  }
+  else{
+    if (group == "Non-carrier"){
+      incor_df_g1 <- rbind(data_check, incor_df_g1)
+      incorrect_group1 <- incorrect_group1 + 1
+    }
+    else{
+      cor_df_g2 <- rbind(data_check, cor_df_g2)
+      correct_group2 <- correct_group2 + 1
+    }
+  }
+}
+cat("#### Error rate for Apparent error rate: \n")
+cat(sprintf("- %s \n", (incorrect_group2+incorrect_group1)/(nrow(X))))
+cat("\n")
+
+cat("#### Number incorrect non-carrier: \n")
+cat(sprintf("- %s \n", incorrect_group1))
+cat("\n")
+
+cat("#### Number incorrect carrier: \n")
+cat(sprintf("- %s \n", incorrect_group2))
+```
+
+
+
+#### Lets overlay the ones that were incorrect for each group as a different color on our LDA graph just to confirm our numbers and visualize where Lachenbruch’s holdout is changing the error rate in comparison to the APR. 
+```{r echo=FALSE, results='asis', warning=FALSE}
+
+x1 <- data[data$Group == "Non-carrier",][2:3]
+x2 <- data[data$Group == "Carrier",][2:3]
+
+# compute sample mean vectors:
+x1.mean <- colMeans(x1)
+x2.mean <- colMeans(x2)
+S1 <- cov(x1)
+S2 <- cov(x2)
+
+n1 <- nrow(x1)
+n2 <- nrow(x2)
+n<-c(n1,n2)
+
+# compute pooled estimate for the covariance matrix:
+S.u <- ((n[1]-1)*S1+(n[2]-1)*S2)/(sum(n)-2)
+w <- solve(S.u)%*%(x1.mean-x2.mean)
+w0 <- -(x1.mean+x2.mean)%*%w/2
+w_t <- t(x1.mean-x2.mean)%*%solve(S.u)
+
+
+ggplot() + geom_point(data=incor_df_g1, aes(x=AHF_activity, y=AHF_antigen), color='red') + geom_point(data=cor_df_g1, aes(x=AHF_activity, y=AHF_antigen), color='green') + labs(title="Log(AHF Activity) vs Log(AHF Antigen)") + xlab("Log(AHF Activity)") + ylab("Log(AHF Antigen)") + theme_classic() + geom_line(aes(data[,2],-(w[1]*data[,2]+w0)/w[2]), color="black")
+
+
+ggplot() + geom_point(data=incor_df_g2, aes(x=AHF_activity, y=AHF_antigen), color='red') + geom_point(data=cor_df_g2, aes(x=AHF_activity, y=AHF_antigen), color='green') + labs(title="Log(AHF Activity) vs Log(AHF Antigen)") + xlab("Log(AHF Activity)") + ylab("Log(AHF Antigen)") + theme_classic() + geom_line(aes(data[,2],-(w[1]*data[,2]+w0)/w[2]), color="black")
+
+```
+
+## CONCLUSION
+
+### As a precaution we do suggest gather more data on this situation if possible to create a more robust model. A common method in machine learning, at least from personal experience, for assessing the error rate of a model is to build a model on a proportion of the data. This is different from the Lachenbruch’s holdout in the fact that we may only use 50-70% of the data and then test the error rate of the model on the remaining 30-50%. Obviously this proportions can greatly vary but they require that a lot more data is collected. 
+
+### The first goal of this analysis was to perform two sample test on the data in order to see if there is a significant difference between individuals that are carriers and noncarriers with respect to AHF activity (\(log_{10}\) scale) and AHF antigen (\(log_{10}\) scale). Group 1 is considered to be the non carrier group while group 2 is considered to be the obligatory carrier group. Using the Hotelling's \(T^2\) test we see that at the 95% confidence intervale we we reject the null hypothesis, that the two samples are from the same populations with the same multivariate means. 
+
+### The second goal of this analysis will be to perform linear discriminant analysis to try and predict the best possible distinguishable boundary between carriers and non carriers with respect to AHF activity (\(log_{10}\) scale) and AHF antigen (\(log_{10}\) scale). By performing Fisher's rule we were able to obtain an error rate of 0.16 for Lachenbruch’s holdout. Overall the results from the LDA will allow physicians to diagnose someone with better confidence, especially if used in conjuction with other diagnostic tests. These sorts of tests are often used with Bayes to estimate the probability someone has the condition, given the prevalence in the population itself. This will increase certainty of classications, but as mentioned earlier it is always highly suggested to collect more data from a larger variety of circumstances as this data collected could not be representative of the population. 
+
+
+
+---
+
+<P style="page-break-before: always">
+\newpage
+
+---
+
+
+# DATASET 3: PCA
+
+
+## INTRODUCTION: 
+### Data has been gatherd on populations which is considered "Census-tract data". The variables that have been gathered are "Total Population (thousands)", "Professional Degree (%)", "Employed age over 16 (%)", "Government Employment (%)", "Median home value ($100,000s)". 
+1) Census data can be very important for a variety of reasons, one of the most important/common ones is predicting voting outcomes. 
+2) Politicians may try to predict their popularity to certain populations by find the more common types of districts and try to gain popularity with one of those districts which would then hopefully have a similar effect on those other common areas. 
+
+### PCA (principle component analysis) is a popular way to explore datasets with multiple dimensions due to the fact that it is a diminsional reduction technique which allows exploration of the data in 2 dimensions (depending on how much of the variance can be summarized in those two dimensions). This is a great high level method to explore which groups have the most variation and potentially cluster together; therefore, this data can help those interested, such as politicians, in understanding their demographic. 
+
+
+## SUMMARIZE DATA:
+### Lets summarize the dataframe we are using for the problem, or the census variates for a set of observations. 
+```{r echo=FALSE, results='asis'}
+data <- read.table("T8-5.DAT", 
+           header=FALSE)
+colnames(data) <- c("Total_Population(thousands)", "Professional_Degree(%)", "Employed_age_over_16(%)", "Government_Employment(%)", "Median_home_value($100,000s)")
+X <- as.matrix(cbind(data[,1], data[,2], data[,3], data[,4], data[,5]))
+
+summary(data[1:3]) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+
+
+summary(data[3:5]) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+
+```
+
+- This table is a general summary of the columns in our dataset. Given that the data has many columns, each with their own units, it is natrual to want to do a dimensional reduction to better understand the variance covariance structure. 
+
+## DATA ANALYSIS:
+### First lets take a look at the eigen values and eigen vectors of the covariance matrix as these are important factors in the principle component analysis. In addtion, we can look at the correlation coeffecients between our principle components and our variates, which is another method of analyzing the contribution of each variate.
+```{r echo=FALSE, results='asis'}
+cov <- cov(X)
+ev <- eigen(cov)
+t(ev$values) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+- This table is the list of eigen values, from largest to smallest, for the covariance of our dataset.
+
+
+```{r echo=FALSE, results='asis'}
+
+ev$vectors %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+- This table is the list of eigen vectors corresponding to the eigen values, from largest to smallest, for the covariance of our dataset.
+
+
+
+```{r echo=FALSE, results='asis'}
+corr_1 <- ev$vectors[,1][1]*sqrt(ev$values[1]/cov[,2][2])
+corr_2 <- ev$vectors[,1][2]*sqrt(ev$values[1]/cov[,2][2])
+corr_3 <- ev$vectors[,1][3]*sqrt(ev$values[1]/cov[,3][3])
+corr_4 <- ev$vectors[,1][4]*sqrt(ev$values[1]/cov[,4][4])
+corr_5 <- ev$vectors[,1][5]*sqrt(ev$values[1]/cov[,5][5])
+
+
+c(corr_1, corr_2, corr_3, corr_4, corr_5) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+
+```
+- This table is the list of correlation coefecients corresponding to the first eigen value for the covariance of our dataset. Each of these values  represents the amount that our variate correlates to the first principle component. The order of the values corresponds to the order of our data table columns mentioned above. This make sense because the 4th value is the largest, similar the 4th value being largest -0.8630699 for the loadings in the table above.
+
+
+
+## Also, lets take a look at the eigen values and eigen vectors of the standardized matrix which is also sometimes a good way to summarize our data (can be preferrable if the primary eigen values are a larger proportion than that of the covariance matrix). As expected these values are the same since the loadings of the standardized matrix are the same as the correlations coeffecients of the standardized matrix. 
+
+
+```{r echo=FALSE, results='asis'}
+X_stan <- scale(X)
+cov_stan <- cov(X_stan)
+ev_stan <- eigen(cov_stan)
+t(ev_stan$values) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F) 
+
+```
+- This table is the list of the eigen values, from largest to smallest, for the covariance matrix of our standardized dataset.
+
+```{r echo=FALSE, results='asis'}
+
+ev_stan$vectors %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F) 
+
+```
+- This table is the list of eigen vectors corresponding to the eigen values, from largest to smallest, for the covariance matrix of our standardized dataset.
+
+### Lets see if the covariance matrix or the correlation matrix summarizes the data in the first two components better. 
+```{r echo=FALSE, results='asis'}
+cat(sprintf("#### Variance summarized in first two components of the covariance matrix: \n - %s \n", (ev$values[1]+ev$values[2])/sum(ev$values)))
+cat("\n")
+cat(sprintf("#### Variance summarized in first two components of the covariance of standardized matrix: \n - %s \n", (ev_stan$values[1]+ev_stan$values[2])/sum(ev_stan$values)))
+#cat(sprintf("#### Variance summarized in first two components of the correlation of standardized matrix: \n -%s \n", (ev_stan_cor$values[1]+ev_stan_cor$values[2])/sum(ev_stan_cor$values)))
+```
+
+#### So we see that using the covariance matrix is preferred here.
+
+### So since we can summarize ~93% of the variance in our data using the first two principal components it would fair to graph our analysis using these two PCs. Lets also looks the the eigen value size graphed over the five components. Finally, we will overlay the PC scores for the sample data in the space of the first two principal components so we can visualize which of the sample data is most contributing to the the principal components which we see Government employment percentage and employed age over 16 (%) are the main two contributors to the 
+
+```{r echo=FALSE, results='asis'}
+state.pc <- princomp(data)
+# Showing the eigenvalues of the covariance matrix:
+(state.pc$sdev)^2 %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F) 
+```
+- This table is a list of the eigen values for the principle component analysis. As we can see these values match those calculated above manually for the components of the covariance matrix for the data; although here we used the princomp() funciton in R.
+
+```{r echo=FALSE, results='asis'}
+
+state.pc$loadings[c(1:5),] %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+- This table is a list of the eigen vectors for the principle component analysis. As we can see these values match those calculated above manually for the components of the covariance matrix for the data; although here we used the princomp() funciton in R.
+
+
+```{r echo=FALSE, results='asis'}
+
+# A scree plot:
+ggplot() + geom_line(aes(x=1:(length(state.pc$sdev)), y=(state.pc$sdev)^2)) + geom_point(aes(x=1:(length(state.pc$sdev)), y=(state.pc$sdev)^2)) + labs(title="Log(AHF Activity) vs Log(AHF Antigen)") + xlab("Log(AHF Activity)") + ylab("Log(AHF Antigen)") + theme_classic()
+
+
+# Plotting the PC scores for the sample data in the space of the first two principal components:
+# par(pty="s")
+# 
+# plot(state.pc$scores[,1], state.pc$scores[,2],
+#      xlab="PC 1", ylab="PC 2", type ='n', lwd=2)
+# # labeling points with state abbreviations:
+# text(state.pc$scores[,1], state.pc$scores[,2], cex=0.7, lwd=2)
+# biplot(state.pc) 
+```
+
+
+```{r echo=FALSE, results='asis'}
+
+# got this function here: https://stackoverflow.com/questions/6578355/plotting-pca-biplot-with-ggplot2 and made a few minor adjustments
+PCbiplot <- function(PC, x="PC1", y="PC2") {
+    # PC being a prcomp object
+    row.names(PC$x)
+    PC$x
+    data <- data.frame(obsnames=c(1:nrow(fit$x)), PC$x)
+    plot <- ggplot(data, aes_string(x=x, y=y)) + geom_text(alpha=.4, size=3, aes(label=obsnames))
+    plot <- plot + geom_hline(aes(yintercept=0), size=.2) + geom_vline(aes(xintercept=0), size=.2)
+    datapc <- data.frame(varnames=rownames(PC$rotation), PC$rotation)
+    mult <- min(
+        (max(data[,y]) - min(data[,y])/(max(datapc[,y])-min(datapc[,y]))),
+        (max(data[,x]) - min(data[,x])/(max(datapc[,x])-min(datapc[,x])))
+        )
+    datapc <- transform(datapc,
+            v1 = .7 * mult * (get(x)),
+            v2 = .7 * mult * (get(y))
+            )
+    plot <- plot + coord_equal() + geom_text(data=datapc, aes(x=v1, y=v2, label=varnames), size = 3, vjust=1, color="blue")
+    plot <- plot + geom_segment(data=datapc, aes(x=0, y=0, xend=v1, yend=v2), arrow=arrow(length=unit(0.2,"cm")), alpha=0.75, color="red") + theme_classic()
+    plot
+}
+
+fit <- prcomp(data, scale=F)
+PCbiplot(fit)
+```
+
+
+
+### Now the scaled or standarized dataset
+
+```{r echo=FALSE, results='asis'}
+
+state.pc <- prcomp(data, scale=T)
+
+# Showing the eigenvalues of the covariance matrix:
+(state.pc$sdev)^2 %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+- This table is a list of the eigen values for the principle component analysis of the scaled or standardized dataset. As we can see these values match those calculated above manually for the components of the covariance matrix for the data; although here we used the princomp() funciton in R.
+
+
+```{r echo=FALSE, results='asis'}
+state.pc$rotation[c(1:5),] %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+- This table is a list of the eigen vectors for the principle component analysis of the scaled or standardized dataset. As we can see these values match those calculated above manually for the components of the covariance matrix for the data; although here we used the princomp() funciton in R.
+
+
+```{r echo=FALSE, results='asis'}
+
+# A scree plot:
+ggplot() + geom_line(aes(x=1:(length(state.pc$sdev)), y=(state.pc$sdev)^2)) + geom_point(aes(x=1:(length(state.pc$sdev)), y=(state.pc$sdev)^2)) + labs(title="Log(AHF Activity) vs Log(AHF Antigen)") + xlab("Log(AHF Activity)") + ylab("Log(AHF Antigen)") + theme_classic()
+```
+
+
+```{r echo=FALSE, results='asis'}
+# got this function here: https://stackoverflow.com/questions/6578355/plotting-pca-biplot-with-ggplot2 and made a few minor adjustments
+PCbiplot <- function(PC, x="PC1", y="PC2") {
+    # PC being a prcomp object
+    row.names(PC$x)
+    PC$x
+    data <- data.frame(obsnames=c(1:nrow(fit$x)), PC$x)
+    plot <- ggplot(data, aes_string(x=x, y=y)) + geom_text(alpha=.4, size=3, aes(label=obsnames))
+    plot <- plot + geom_hline(aes(yintercept=0), size=.2) + geom_vline(aes(xintercept=0), size=.2)
+    datapc <- data.frame(varnames=rownames(PC$rotation), PC$rotation)
+    mult <- min(
+        (max(data[,y]) - min(data[,y])/(max(datapc[,y])-min(datapc[,y]))),
+        (max(data[,x]) - min(data[,x])/(max(datapc[,x])-min(datapc[,x])))
+        )
+    datapc <- transform(datapc,
+            v1 = .7 * mult * (get(x)),
+            v2 = .7 * mult * (get(y))
+            )
+    plot <- plot + coord_equal() + geom_text(data=datapc, aes(x=v1, y=v2, label=varnames), size = 3, vjust=1, color="blue")
+    plot <- plot + geom_segment(data=datapc, aes(x=0, y=0, xend=v1, yend=v2), arrow=arrow(length=unit(0.2,"cm")), alpha=0.75, color="red") + theme_classic()
+    plot
+}
+
+fit <- prcomp(data, scale=T)
+PCbiplot(fit)
+```
+
+
+## CONCLUSION
+
+### As a precaution we do suggest gather more data on this situation if possible. This will increase the strength of the analysis and account for other variables in the situation. This would be achieved by increasing the value of n, or observed situaitons (census data in new areas), and r, the number of observed varaibles upon which to build PCs (such as "Total_Population(thousands)", "Professional_Degree(%)", and "Employed_age_over_16(%)" etc). Please contact if this is the case and a more robust script will be made to factor in variations in new potential data gathering.
+
+### From the results of the principle component analysis we are able to determine that we can summarize %92 of the variance in our dataset in the first princple component. We also are able to determine that two variates that contribute most to the variance in the population are Government Employment and Age over 16 employement rates. This type of information may be of value to a variety of people who may try to better understand the demographic. Individuals can better influence these regions based on things they have in common (home value, total population, professional degrees etc.), but they can also target other sectors more specifically based on government employment and individuals employed over the age of 16. 
+
+
